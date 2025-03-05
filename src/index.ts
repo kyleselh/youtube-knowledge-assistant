@@ -1,23 +1,22 @@
-import { VideoManagement } from './functions/videos';
+import { google } from 'googleapis';
 
 async function start() {
     try {
-        console.log('Starting YouTube Service...');
+        console.log('Starting YouTube MCP Server...');
         console.log('Environment check:');
-        console.log('API Key:', process.env.YOUTUBE_API_KEY ? 'Set' : 'Not set');
         
-        console.log('Initializing video manager...');
-        const videoManager = new VideoManagement();
-
-        console.log('Fetching video details...');
-        const videoDetails = await videoManager.getVideo({ 
-            videoId: 'dQw4w9WgXcQ',
-            parts: ["snippet", "statistics", "contentDetails"]
-        });
+        const apiKey = process.env.YOUTUBE_API_KEY;
+        if (!apiKey) {
+            console.error('ERROR: YOUTUBE_API_KEY environment variable is not set.');
+            console.error('Please set your YouTube API key in the .env file or as an environment variable.');
+            console.error('You can get a YouTube API key from https://console.cloud.google.com/apis/credentials');
+            process.exit(1);
+        }
         
-        console.log('\nVideo details:');
-        console.log(JSON.stringify(videoDetails, null, 2));
-        console.log('\nService operation completed successfully.');
+        console.log('API Key:', 'Set ✓');
+        console.log('\nYouTube MCP Server is ready to use!');
+        console.log('You can now use this server with your MCP client.');
+        
     } catch (error) {
         console.error('\nError occurred:');
         console.error(error.message);

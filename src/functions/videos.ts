@@ -1,4 +1,4 @@
-import { google } from 'googleapis';
+import { google, youtube_v3 } from 'googleapis';
 
 function safelyExecute<T>(fn: () => Promise<T>): Promise<T> {
   return fn().catch(error => {
@@ -7,7 +7,7 @@ function safelyExecute<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 export class VideoManagement {
-  private youtube;
+  private youtube: youtube_v3.Youtube;
 
   constructor() {
     const apiKey = process.env.YOUTUBE_API_KEY;
@@ -15,9 +15,19 @@ export class VideoManagement {
       throw new Error('YOUTUBE_API_KEY environment variable is not set. Please set it before running the application.');
     }
 
-    this.youtube = google.youtube({
-      version: 'v3',
+    this.youtube = new youtube_v3.Youtube({
       auth: apiKey
+    });
+  }
+
+  async getVideo({ videoId, parts = ["snippet", "statistics", "contentDetails"] }: { videoId: string, parts?: string[] }) {
+    return safelyExecute(async () => {
+      const response = await this.youtube.videos.list({
+        part: parts.join(','),
+        id: videoId
+      });
+      
+      return response.data.items?.[0] || null;
     });
   }
 

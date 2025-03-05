@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube API Interface</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        h1 {
+            color: #ff0000;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #ff0000;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #cc0000;
+        }
+        .result-container {
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        .result-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .result-item h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .thumbnail {
+            width: 120px;
+            height: 90px;
+            object-fit: cover;
+            float: left;
+            margin-right: 15px;
+            border-radius: 4px;
+        }
+        .video-info {
+            overflow: hidden;
+        }
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+        .stats {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .api-key-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #fff3cd;
+            border-radius: 4px;
+            border-left: 4px solid #ffc107;
+        }
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            background-color: #f8d7da;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none;
+        }
+        .help-text {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        .extracted-id {
+            font-size: 14px;
+            color: #28a745;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>YouTube API Interface</h1>
+    
+    <div class="container">
+        <div class="api-key-section">
+            <label for="api-key">YouTube API Key:</label>
+            <input type="text" id="api-key" placeholder="Enter your YouTube API Key">
+            <p>You need a YouTube API key to use this interface. Get one from <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>.</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="action-type">Select Action:</label>
+            <select id="action-type">
+                <option value="video-details">Get Video Details</option>
+                <option value="search-videos">Search Videos</option>
+                <option value="channel-details">Get Channel Details</option>
+                <option value="video-comments">Get Video Comments</option>
+            </select>
+        </div>
+        
+        <div id="video-details-form" class="form-group">
+            <label for="video-url">Video URL or ID:</label>
+            <input type="text" id="video-url" placeholder="e.g., https://www.youtube.com/watch?v=dQw4w9WgXcQ or dQw4w9WgXcQ">
+            <p class="help-text">You can paste a full YouTube video URL or just the video ID</p>
+            <p id="extracted-video-id" class="extracted-id"></p>
+        </div>
+        
+        <div id="search-videos-form" class="form-group" style="display: none;">
+            <label for="search-query">Search Query:</label>
+            <input type="text" id="search-query" placeholder="e.g., programming tutorial">
+            
+            <label for="max-results">Max Results:</label>
+            <input type="text" id="max-results" value="5">
+        </div>
+        
+        <div id="channel-details-form" class="form-group" style="display: none;">
+            <label for="channel-url">Channel URL or ID:</label>
+            <input type="text" id="channel-url" placeholder="e.g., https://www.youtube.com/channel/UC-lHJZR3Gqxm24_Vd_AJ5Yw or UC-lHJZR3Gqxm24_Vd_AJ5Yw">
+            <p class="help-text">You can paste a full YouTube channel URL or just the channel ID</p>
+            <p id="extracted-channel-id" class="extracted-id"></p>
+        </div>
+        
+        <div id="video-comments-form" class="form-group" style="display: none;">
+            <label for="comments-video-url">Video URL or ID:</label>
+            <input type="text" id="comments-video-url" placeholder="e.g., https://www.youtube.com/watch?v=dQw4w9WgXcQ or dQw4w9WgXcQ">
+            <p class="help-text">You can paste a full YouTube video URL or just the video ID</p>
+            <p id="extracted-comments-video-id" class="extracted-id"></p>
+            
+            <label for="comments-max-results">Max Results:</label>
+            <input type="text" id="comments-max-results" value="5">
+        </div>
+        
+        <button id="submit-btn">Submit</button>
+        
+        <div id="error-message" class="error"></div>
+        
+        <div id="results" class="result-container"></div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const actionTypeSelect = document.getElementById('action-type');
+            const videoDetailsForm = document.getElementById('video-details-form');
+            const searchVideosForm = document.getElementById('search-videos-form');
+            const channelDetailsForm = document.getElementById('channel-details-form');
+            const videoCommentsForm = document.getElementById('video-comments-form');
+            const submitBtn = document.getElementById('submit-btn');
+            const resultsContainer = document.getElementById('results');
+            const errorMessage = document.getElementById('error-message');
+            
+            // URL input elements
+            const videoUrlInput = document.getElementById('video-url');
+            const channelUrlInput = document.getElementById('channel-url');
+            const commentsVideoUrlInput = document.getElementById('comments-video-url');
+            
+            // Extracted ID elements
+            const extractedVideoId = document.getElementById('extracted-video-id');
+            const extractedChannelId = document.getElementById('extracted-channel-id');
+            const extractedCommentsVideoId = document.getElementById('extracted-comments-video-id');
+            
+            // Extract video ID from URL
+            function extractVideoId(url) {
+                if (!url) return '';
+                
+                // If it's already just an ID (no slashes or dots)
+                if (!/[\/\.]/.test(url)) {
+                    return url;
+                }
+                
+                // Try to extract from various URL formats
+                let match;
+                
+                // Standard YouTube URL: https://www.youtube.com/watch?v=VIDEO_ID
+                match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/e\/|youtube\.com\/user\/[^\/]+\/u\/\d+\/videos\/|youtube\.com\/[^\/]+\/[^\/]+\/[^\/]+\/|youtube\.com\/attribution_link\?a=[^\/]+\/|youtube\.com\/attribution_link\?.*v%3D|youtube\.com\/shorts\/)([^"&?\/\s]{11})/);
+                if (match && match[1]) {
+                    return match[1];
+                }
+                
+                // Short URL: https://youtu.be/VIDEO_ID
+                match = url.match(/youtu\.be\/([^"&?\/\s]{11})/);
+                if (match && match[1]) {
+                    return match[1];
+                }
+                
+                // Embedded URL: https://www.youtube.com/embed/VIDEO_ID
+                match = url.match(/youtube\.com\/embed\/([^"&?\/\s]{11})/);
+                if (match && match[1]) {
+                    return match[1];
+                }
+                
+                // Mobile URL: https://m.youtube.com/watch?v=VIDEO_ID
+                match = url.match(/m\.youtube\.com\/watch\?v=([^"&?\/\s]{11})/);
+                if (match && match[1]) {
+                    return match[1];
+                }
+                
+                // Shorts URL: https://youtube.com/shorts/VIDEO_ID
+                match = url.match(/youtube\.com\/shorts\/([^"&?\/\s]{11})/);
+                if (match && match[1]) {
+                    return match[1];
+                }
+                
+                return '';
+            }
+            
+            // Extract channel ID from URL
+            function extractChannelId(url) {
+                if (!url) return '';
+                
+                // If it's already just an ID (no slashes or dots)
+                if (!/[\/\.]/.test(url)) {
+                    return url;
+                }
+                
+                // Try to extract from various URL formats
+                let match;
+                
+                // Channel URL: https://www.youtube.com/channel/CHANNEL_ID
+                match = url.match(/youtube\.com\/channel\/([^"&?\/\s]+)/);
+                if (match && match[1]) {
+                    return match[1];
+                }
+                
+                // User URL: https://www.youtube.com/user/USERNAME
+                // Note: This doesn't actually give us the channel ID, but we'll handle it separately
+                match = url.match(/youtube\.com\/user\/([^"&?\/\s]+)/);
+                if (match && match[1]) {
+                    // We'll need to make an API call to get the channel ID from the username
+                    // For now, we'll just return a message
+                    return 'USERNAME:' + match[1];
+                }
+                
+                // Custom URL: https://www.youtube.com/c/CUSTOM_URL
+                match = url.match(/youtube\.com\/c\/([^"&?\/\s]+)/);
+                if (match && match[1]) {
+                    // We'll need to make an API call to get the channel ID from the custom URL
+                    // For now, we'll just return a message
+                    return 'CUSTOM:' + match[1];
+                }
+                
+                // Handle @username format
+                match = url.match(/youtube\.com\/@([^"&?\/\s]+)/);
+                if (match && match[1]) {
+                    return 'USERNAME:' + match[1];
+                }
+                
+                return '';
+            }
+            
+            // Show extracted video ID
+            videoUrlInput.addEventListener('input', function() {
+                const videoId = extractVideoId(this.value.trim());
+                if (videoId) {
+                    extractedVideoId.textContent = 'Extracted Video ID: ' + videoId;
+                    extractedVideoId.style.display = 'block';
+                } else {
+                    extractedVideoId.style.display = 'none';
+                }
+            });
+            
+            // Show extracted channel ID
+            channelUrlInput.addEventListener('input', function() {
+                const channelId = extractChannelId(this.value.trim());
+                if (channelId) {
+                    if (channelId.startsWith('USERNAME:')) {
+                        extractedChannelId.textContent = 'Username detected: ' + channelId.substring(9) + ' (will try to find channel ID)';
+                    } else if (channelId.startsWith('CUSTOM:')) {
+                        extractedChannelId.textContent = 'Custom URL detected: ' + channelId.substring(7) + ' (will try to find channel ID)';
+                    } else {
+                        extractedChannelId.textContent = 'Extracted Channel ID: ' + channelId;
+                    }
+                    extractedChannelId.style.display = 'block';
+                } else {
+                    extractedChannelId.style.display = 'none';
+                }
+            });
+            
+            // Show extracted video ID for comments
+            commentsVideoUrlInput.addEventListener('input', function() {
+                const videoId = extractVideoId(this.value.trim());
+                if (videoId) {
+                    extractedCommentsVideoId.textContent = 'Extracted Video ID: ' + videoId;
+                    extractedCommentsVideoId.style.display = 'block';
+                } else {
+                    extractedCommentsVideoId.style.display = 'none';
+                }
+            });
+            
+            // Show/hide forms based on selected action
+            actionTypeSelect.addEventListener('change', function() {
+                videoDetailsForm.style.display = 'none';
+                searchVideosForm.style.display = 'none';
+                channelDetailsForm.style.display = 'none';
+                videoCommentsForm.style.display = 'none';
+                
+                switch(this.value) {
+                    case 'video-details':
+                        videoDetailsForm.style.display = 'block';
+                        break;
+                    case 'search-videos':
+                        searchVideosForm.style.display = 'block';
+                        break;
+                    case 'channel-details':
+                        channelDetailsForm.style.display = 'block';
+                        break;
+                    case 'video-comments':
+                        videoCommentsForm.style.display = 'block';
+                        break;
+                }
+            });
+            
+            // Handle form submission
+            submitBtn.addEventListener('click', function() {
+                const apiKey = document.getElementById('api-key').value.trim();
+                if (!apiKey) {
+                    showError('Please enter a YouTube API Key');
+                    return;
+                }
+                
+                const actionType = actionTypeSelect.value;
+                
+                // Clear previous results and errors
+                resultsContainer.innerHTML = '';
+                errorMessage.style.display = 'none';
+                
+                switch(actionType) {
+                    case 'video-details':
+                        getVideoDetails(apiKey);
+                        break;
+                    case 'search-videos':
+                        searchVideos(apiKey);
+                        break;
+                    case 'channel-details':
+                        getChannelDetails(apiKey);
+                        break;
+                    case 'video-comments':
+                        getVideoComments(apiKey);
+                        break;
+                }
+            });
+            
+            // Get video details
+            function getVideoDetails(apiKey) {
+                const videoUrl = document.getElementById('video-url').value.trim();
+                if (!videoUrl) {
+                    showError('Please enter a Video URL or ID');
+                    return;
+                }
+                
+                const videoId = extractVideoId(videoUrl);
+                if (!videoId) {
+                    showError('Could not extract a valid Video ID from the URL');
+                    return;
+                }
+                
+                resultsContainer.innerHTML = '<p>Loading video details...</p>';
+                
+                fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&id=${videoId}&key=${apiKey}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            throw new Error(data.error.message);
+                        }
+                        
+                        if (!data.items || data.items.length === 0) {
+                            resultsContainer.innerHTML = '<p>No video found with that ID.</p>';
+                            return;
+                        }
+                        
+                        const video = data.items[0];
+                        const html = `
+                            <div class="result-item clearfix">
+                                <img src="${video.snippet.thumbnails.medium.url}" alt="${video.snippet.title}" class="thumbnail">
+                                <div class="video-info">
+                                    <h3>${video.snippet.title}</h3>
+                                    <p>${video.snippet.description.substring(0, 200)}${video.snippet.description.length > 200 ? '...' : ''}</p>
+                                    <div class="stats">
+                                        <p>Channel: ${video.snippet.channelTitle}</p>
+                                        <p>Published: ${new Date(video.snippet.publishedAt).toLocaleDateString()}</p>
+                                        <p>Views: ${parseInt(video.statistics.viewCount).toLocaleString()}</p>
+                                        <p>Likes: ${parseInt(video.statistics.likeCount).toLocaleString()}</p>
+                                        <p>Comments: ${parseInt(video.statistics.commentCount).toLocaleString()}</p>
+                                        <p>Duration: ${formatDuration(video.contentDetails.duration)}</p>
+                                        <p>Video ID: ${video.id}</p>
+                                        <p>Watch: <a href="https://www.youtube.com/watch?v=${video.id}" target="_blank">https://www.youtube.com/watch?v=${video.id}</a></p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        resultsContainer.innerHTML = html;
+                    })
+                    .catch(error => {
+                        showError('Error: ' + error.message);
+                    });
+            }
+            
+            // Search videos
+            function searchVideos(apiKey) {
+                const query = document.getElementById('search-query').value.trim();
+                const maxResults = document.getElementById('max-results').value.trim() || '5';
+                
+                if (!query) {
+                    showError('Please enter a search query');
+                    return;
+                }
+                
+                resultsContainer.innerHTML = '<p>Searching videos...</p>';
+                
+                fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&maxResults=${maxResults}&type=video&key=${apiKey}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            throw new Error(data.error.message);
+                        }
+                        
+                        if (!data.items || data.items.length === 0) {
+                            resultsContainer.innerHTML = '<p>No videos found.</p>';
+                            return;
+                        }
+                        
+                        let html = '';
+                        data.items.forEach(item => {
+                            html += `
+                                <div class="result-item clearfix">
+                                    <img src="${item.snippet.thumbnails.medium.url}" alt="${item.snippet.title}" class="thumbnail">
+                                    <div class="video-info">
+                                        <h3>${item.snippet.title}</h3>
+                                        <p>${item.snippet.description.substring(0, 150)}${item.snippet.description.length > 150 ? '...' : ''}</p>
+                                        <div class="stats">
+                                            <p>Channel: ${item.snippet.channelTitle}</p>
+                                            <p>Published: ${new Date(item.snippet.publishedAt).toLocaleDateString()}</p>
+                                            <p>Video ID: ${item.id.videoId}</p>
+                                            <p>Watch: <a href="https://www.youtube.com/watch?v=${item.id.videoId}" target="_blank">https://www.youtube.com/watch?v=${item.id.videoId}</a></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        resultsContainer.innerHTML = html;
+                    })
+                    .catch(error => {
+                        showError('Error: ' + error.message);
+                    });
+            }
+            
+            // Get channel details
+            function getChannelDetails(apiKey) {
+                const channelUrl = document.getElementById('channel-url').value.trim();
+                if (!channelUrl) {
+                    showError('Please enter a Channel URL or ID');
+                    return;
+                }
+                
+                const channelIdOrUsername = extractChannelId(channelUrl);
+                if (!channelIdOrUsername) {
+                    showError('Could not extract a valid Channel ID from the URL');
+                    return;
+                }
+                
+                resultsContainer.innerHTML = '<p>Loading channel details...</p>';
+                
+                // Handle username or custom URL
+                if (channelIdOrUsername.startsWith('USERNAME:') || channelIdOrUsername.startsWith('CUSTOM:')) {
+                    const username = channelIdOrUsername.startsWith('USERNAME:') 
+                        ? channelIdOrUsername.substring(9) 
+                        : channelIdOrUsername.substring(7);
+                    
+                    // First, search for the channel by username
+                    fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(username)}&type=channel&maxResults=1&key=${apiKey}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.error) {
+                                throw new Error(data.error.message);
+                            }
+                            
+                            if (!data.items || data.items.length === 0) {
+                                resultsContainer.innerHTML = '<p>No channel found with that username.</p>';
+                                return;
+                            }
+                            
+                            // Now get the channel details using the channel ID
+                            const channelId = data.items[0].id.channelId;
+                            fetchChannelDetails(channelId, apiKey);
+                        })
+                        .catch(error => {
+                            showError('Error: ' + error.message);
+                        });
+                } else {
+                    // Direct channel ID
+                    fetchChannelDetails(channelIdOrUsername, apiKey);
+                }
+            }
+            
+            // Fetch channel details by ID
+            function fetchChannelDetails(channelId, apiKey) {
+                fetch(`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id=${channelId}&key=${apiKey}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            throw new Error(data.error.message);
+                        }
+                        
+                        if (!data.items || data.items.length === 0) {
+                            resultsContainer.innerHTML = '<p>No channel found with that ID.</p>';
+                            return;
+                        }
+                        
+                        const channel = data.items[0];
+                        const html = `
+                            <div class="result-item clearfix">
+                                <img src="${channel.snippet.thumbnails.medium.url}" alt="${channel.snippet.title}" class="thumbnail">
+                                <div class="video-info">
+                                    <h3>${channel.snippet.title}</h3>
+                                    <p>${channel.snippet.description.substring(0, 200)}${channel.snippet.description.length > 200 ? '...' : ''}</p>
+                                    <div class="stats">
+                                        <p>Subscribers: ${parseInt(channel.statistics.subscriberCount).toLocaleString()}</p>
+                                        <p>Videos: ${parseInt(channel.statistics.videoCount).toLocaleString()}</p>
+                                        <p>Views: ${parseInt(channel.statistics.viewCount).toLocaleString()}</p>
+                                        <p>Created: ${new Date(channel.snippet.publishedAt).toLocaleDateString()}</p>
+                                        <p>Channel ID: ${channel.id}</p>
+                                        <p>Visit: <a href="https://www.youtube.com/channel/${channel.id}" target="_blank">https://www.youtube.com/channel/${channel.id}</a></p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        resultsContainer.innerHTML = html;
+                    })
+                    .catch(error => {
+                        showError('Error: ' + error.message);
+                    });
+            }
+            
+            // Get video comments
+            function getVideoComments(apiKey) {
+                const videoUrl = document.getElementById('comments-video-url').value.trim();
+                const maxResults = document.getElementById('comments-max-results').value.trim() || '5';
+                
+                if (!videoUrl) {
+                    showError('Please enter a Video URL or ID');
+                    return;
+                }
+                
+                const videoId = extractVideoId(videoUrl);
+                if (!videoId) {
+                    showError('Could not extract a valid Video ID from the URL');
+                    return;
+                }
+                
+                resultsContainer.innerHTML = '<p>Loading comments...</p>';
+                
+                fetch(`https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=${maxResults}&key=${apiKey}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            throw new Error(data.error.message);
+                        }
+                        
+                        if (!data.items || data.items.length === 0) {
+                            resultsContainer.innerHTML = '<p>No comments found for this video.</p>';
+                            return;
+                        }
+                        
+                        let html = `<h2>Comments for Video ID: ${videoId}</h2>`;
+                        data.items.forEach(item => {
+                            const comment = item.snippet.topLevelComment.snippet;
+                            html += `
+                                <div class="result-item">
+                                    <h3>${comment.authorDisplayName}</h3>
+                                    <p>${comment.textDisplay}</p>
+                                    <div class="stats">
+                                        <p>Likes: ${comment.likeCount}</p>
+                                        <p>Published: ${new Date(comment.publishedAt).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        resultsContainer.innerHTML = html;
+                    })
+                    .catch(error => {
+                        showError('Error: ' + error.message);
+                    });
+            }
+            
+            // Helper function to format ISO 8601 duration
+            function formatDuration(isoDuration) {
+                const match = isoDuration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+                
+                const hours = (match[1] && match[1].replace('H', '')) || 0;
+                const minutes = (match[2] && match[2].replace('M', '')) || 0;
+                const seconds = (match[3] && match[3].replace('S', '')) || 0;
+                
+                let result = '';
+                if (hours > 0) {
+                    result += hours + ':';
+                    result += minutes.toString().padStart(2, '0') + ':';
+                } else {
+                    result += minutes + ':';
+                }
+                result += seconds.toString().padStart(2, '0');
+                
+                return result;
+            }
+            
+            // Show error message
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html> 

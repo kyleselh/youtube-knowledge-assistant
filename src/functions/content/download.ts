@@ -1,6 +1,6 @@
 import { MCPFunction, MCPFunctionGroup } from "@modelcontextprotocol/sdk";
 import { YoutubeTranscript } from "youtube-transcript";
-import * as ytdl from "ytdl-core";
+import ytdl from "ytdl-core";
 import * as fs from "fs/promises";
 import * as path from 'path';
 import ffmpeg from 'fluent-ffmpeg';
