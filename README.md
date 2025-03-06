@@ -2,7 +2,7 @@
 [![smithery badge](https://smithery.ai/badge/@ZubeidHendricks/youtube)](https://smithery.ai/server/@ZubeidHendricks/youtube)
 
 A Model Context Protocol (MCP) server implementation for YouTube, enabling AI language models to interact with YouTube content through a standardized interface.
-Updated on March 05, 2025
+
 ## Features
 
 ### Video Information
